@@ -8,11 +8,18 @@ namespace YandexTrackerToNotion.Services
 	{
         private readonly HttpClient _httpClient;
         private readonly string _apiUrl;
+        private readonly string _chatId;
 
-        public TelegramService(HttpClient httpClient, string botToken)
+        public TelegramService(HttpClient httpClient, string botToken, string chatId)
         {
             _httpClient = httpClient;
             _apiUrl = $"https://api.telegram.org/bot{botToken}/";
+            _chatId = chatId;
+        }
+
+        public async Task SendMessageAsync(string message)
+        {
+            await SendMessageAsync(_chatId, message);
         }
 
         public async Task SendMessageAsync(string chatId, string message)

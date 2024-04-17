@@ -11,15 +11,18 @@ services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 services.AddHttpClient();
 
-services.AddControllers();
+
 services.AddHttpClient<TelegramService>();
 services.AddSingleton(provider =>
 {
     var httpClientFactory = provider.GetRequiredService<IHttpClientFactory>();
     var httpClient = httpClientFactory.CreateClient();
     var botToken = Environment.GetEnvironmentVariable("TELEGRAM_BOT_TOKEN");
-    return new TelegramService(httpClient, botToken);
+    var chatId = Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID");
+    return new TelegramService(httpClient, botToken, chatId);
 });
+
+services.AddControllers();
 
 var app = builder.Build();
 

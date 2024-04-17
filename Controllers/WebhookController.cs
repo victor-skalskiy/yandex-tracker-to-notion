@@ -20,7 +20,7 @@ public class WebhookController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] dynamic data)
     {
-        await _telegramService.SendMessageAsync(Environment.GetEnvironmentVariable("TELEGRAM_CHAT_ID"), $"catch the input packet: {data}");
+        await _telegramService.SendMessageAsync($"catch the input packet: {data}");
 
         // Логика обработки данных из Yandex Tracker
         var notionPageId = await CreateOrUpdateNotionPage(data);
