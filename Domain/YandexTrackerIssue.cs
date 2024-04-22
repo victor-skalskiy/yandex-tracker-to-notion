@@ -12,156 +12,145 @@ namespace YandexTrackerToNotion.Domain
         [JsonProperty("currentDateTime.date")]
         public string CurrentDateTime { get; set; }
 
+        [JsonProperty("issue.id")]
+        public string Id { get; set; }
+
+        [JsonProperty("issue.releaseNote")]
+        public string ReleaseNote { get; set; }
+
         [JsonProperty("issue.summary")]
         public string Summary { get; set; }
+
+        [JsonProperty("issue.type")]
+        public string Type { get; set; }
+
+        [JsonProperty("issue.priority")]
+        public string Priority { get; set; }
 
         [JsonProperty("issue.description")]
         public string Description { get; set; }
 
-        public YandexTrackerIssueDetail Issue { get; set; }
-    }
-
-    public class YandexTrackerIssueDetail
-    {
-        [JsonProperty("id")]
-        public string Id { get; set; }
-
-        [JsonProperty("releaseNote")]
-        public string ReleaseNote { get; set; }
-
-        [JsonProperty("summary")]
-        public string Summary { get; set; }
-
-        [JsonProperty("type")]
-        public string Type { get; set; }
-
-        [JsonProperty("priority")]
-        public string Priority { get; set; }
-
-        [JsonProperty("description")]
-        public string Description { get; set; }
-
-        [JsonProperty("status")]
+        [JsonProperty("issue.status")]
         public string Status { get; set; }
 
-        [JsonProperty("resolution")]
+        [JsonProperty("issue.resolution")]
         public string Resolution { get; set; }
 
-        [JsonProperty("statusStartTime")]
+        [JsonProperty("issue.statusStartTime")]
         public string StatusStartTime { get; set; }
 
-        [JsonProperty("created")]
+        [JsonProperty("issue.created")]
         public string Created { get; set; }
 
-        [JsonProperty("updated")]
+        [JsonProperty("issue.updated")]
         public string Updated { get; set; }
 
-        [JsonProperty("resolved")]
+        [JsonProperty("issue.resolved")]
         public string Resolved { get; set; }
 
-        [JsonProperty("lastCommentUpdatedAt")]
+        [JsonProperty("issue.lastCommentUpdatedAt")]
         public string LastCommentUpdatedAt { get; set; }
 
-        [JsonProperty("start")]
+        [JsonProperty("issue.start")]
         public string Start { get; set; }
 
-        [JsonProperty("end")]
+        [JsonProperty("issue.end")]
         public string End { get; set; }
 
-        [JsonProperty("dueDate")]
+        [JsonProperty("issue.dueDate")]
         public string DueDate { get; set; }
 
-        [JsonProperty("author")]
+        [JsonProperty("issue.author")]
         public string Author { get; set; }
 
-        [JsonProperty("assignee")]
+        [JsonProperty("issue.assignee")]
         public string Assignee { get; set; }
 
-        [JsonProperty("followers")]
+        [JsonProperty("issue.followers")]
         public string Followers { get; set; }
 
-        [JsonProperty("access")]
+        [JsonProperty("issue.access")]
         public string Access { get; set; }
 
-        [JsonProperty("modifier")]
+        [JsonProperty("issue.modifier")]
         public string Modifier { get; set; }
 
-        [JsonProperty("resolver")]
+        [JsonProperty("issue.resolver")]
         public string Resolver { get; set; }
 
-        [JsonProperty("followingMaillists")]
+        [JsonProperty("issue.followingMaillists")]
         public string FollowingMaillists { get; set; }
 
-        [JsonProperty("project")]
+        [JsonProperty("issue.project")]
         public string Project { get; set; }
 
-        [JsonProperty("tags")]
+        [JsonProperty("issue.tags")]
         public string Tags { get; set; }
 
-        [JsonProperty("components")]
+        [JsonProperty("issue.components")]
         public string Components { get; set; }
 
-        [JsonProperty("affectedVersions")]
+        [JsonProperty("issue.affectedVersions")]
         public string AffectedVersions { get; set; }
 
-        [JsonProperty("fixVersions")]
+        [JsonProperty("issue.fixVersions")]
         public string FixVersions { get; set; }
 
-        [JsonProperty("parent")]
+        [JsonProperty("issue.parent")]
         public string Parent { get; set; }
 
-        [JsonProperty("previousQueue")]
+        [JsonProperty("issue.previousQueue")]
         public string PreviousQueue { get; set; }
 
-        [JsonProperty("votedBy")]
+        [JsonProperty("issue.votedBy")]
         public string VotedBy { get; set; }
 
-        [JsonProperty("votes")]
+        [JsonProperty("issue.votes")]
         public int Votes { get; set; }
 
-        [JsonProperty("commentWithoutExternalMessageCount")]
+        [JsonProperty("issue.commentWithoutExternalMessageCount")]
         public int CommentWithoutExternalMessageCount { get; set; }
 
-        [JsonProperty("commentWithExternalMessageCount")]
+        [JsonProperty("issue.commentWithExternalMessageCount")]
         public int CommentWithExternalMessageCount { get; set; }
 
-        [JsonProperty("boards")]
+        [JsonProperty("issue.boards")]
         public string Boards { get; set; }
 
-        [JsonProperty("pendingReplyFrom")]
+        [JsonProperty("issue.pendingReplyFrom")]
         public string PendingReplyFrom { get; set; }
 
-        [JsonProperty("lastQueue")]
+        [JsonProperty("issue.lastQueue")]
         public string LastQueue { get; set; }
 
-        [JsonProperty("participantPercentsTotal")]
+        [JsonProperty("issue.participantPercentsTotal")]
         public string ParticipantPercentsTotal { get; set; }
 
-        [JsonProperty("possibleSpam")]
+        [JsonProperty("issue.possibleSpam")]
         public string PossibleSpam { get; set; }
 
-        [JsonProperty("statusType")]
+        [JsonProperty("issue.statusType")]
         public string StatusType { get; set; }
 
-        [JsonProperty("qaEngineer")]
+        [JsonProperty("issue.qaEngineer")]
         public string QaEngineer { get; set; }
 
-        [JsonProperty("originalEstimation")]
+        [JsonProperty("issue.originalEstimation")]
         public string OriginalEstimation { get; set; }
 
-        [JsonProperty("estimation")]
+        [JsonProperty("issue.estimation")]
         public string Estimation { get; set; }
 
-        [JsonProperty("spent")]
+        [JsonProperty("issue.spent")]
         public string Spent { get; set; }
 
-        [JsonProperty("epic")]
+        [JsonProperty("issue.epic")]
         public string Epic { get; set; }
 
-        [JsonProperty("storyPoints")]
+        [JsonProperty("issue.storyPoints")]
         public string StoryPoints { get; set; }
 
-        [JsonProperty("sprint")]
+        [JsonProperty("issue.sprint")]
         public string Sprint { get; set; }
     }
 }
