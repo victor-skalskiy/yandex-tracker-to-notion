@@ -7,7 +7,10 @@ namespace YandexTrackerToNotion.Extentions
     {
         public static TimeSpan ParseRussianTimeString(string input)
         {
-            var regex = new Regex(@"(\d+)\s(минут|час|дня|дней)");
+            if (string.IsNullOrWhiteSpace(input))
+                return TimeSpan.Zero;
+
+            var regex = new Regex(@"(\d+)\s(минут|час|дня|дней|день)");
             var match = regex.Match(input);
 
             if (!match.Success)
@@ -27,6 +30,7 @@ namespace YandexTrackerToNotion.Extentions
                 case "час":
                     result = TimeSpan.FromHours(quantity);
                     break;
+                case "день":
                 case "дня":
                 case "дней":
                     result = TimeSpan.FromDays(quantity);

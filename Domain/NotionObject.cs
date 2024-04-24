@@ -6,6 +6,7 @@ namespace YandexTrackerToNotion.Domain
     public class NotionObject
     {
         public NotionObject() { Description = ""; }
+        public string Key { get; set; }
         public string Object { get; set; }
         public string Id { get; set; }
         public string Title { get; set; }
@@ -16,6 +17,7 @@ namespace YandexTrackerToNotion.Domain
         public TimeSpan Spent { get; set; }
         public string? Emoji { get; set; }
         public string Status { get; set; }
+        public string AssigneeUserId { get; set; }
     }
 
     /// <summary>

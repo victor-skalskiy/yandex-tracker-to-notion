@@ -13,16 +13,18 @@ namespace YandexTrackerToNotion.Services
         private readonly HttpClient _httpClient;
         private readonly IEnvOptions _options;
         private static Dictionary<string, NotionStatus> statusList;
+        private readonly ITelegramService _telegramService;
 
-        public MapperService(HttpClient httpClient, IEnvOptions options)
+        public MapperService(HttpClient httpClient, IEnvOptions options, ITelegramService telegramService)
         {
             _options = options;
             _databaseId = _options.NotionDatabaseId;
             _httpClient = httpClient;
+            _telegramService = telegramService;
             MapStatuses();
         }
 
-        private static void CalculateEstimates(YandexTrackerIssue issue, out TimeSpan estimateTime, out TimeSpan originalEstimateTime)
+        static void CalculateEstimates(YandexTrackerIssue issue, out TimeSpan estimateTime, out TimeSpan originalEstimateTime)
         {
             estimateTime = TimeParser.ParseRussianTimeString(issue.Estimation);
             originalEstimateTime = TimeParser.ParseRussianTimeString(issue.OriginalEstimation);
@@ -32,6 +34,24 @@ namespace YandexTrackerToNotion.Services
                 estimateTime = originalEstimateTime;
                 originalEstimateTime = TimeSpan.Zero;
             }
+        }
+
+        NotionUser? GetNotionUser(string yandexTrackerUserName)
+        {
+            var finded = _options.NotionUsers
+                .Where(x => x.Name == yandexTrackerUserName || x.YandexTrackerAlias == yandexTrackerUserName)
+                .FirstOrDefault();
+
+            if (finded is null && _options.IsDevMode)
+                _telegramService.SendMessage($"YandexTracker user named '{yandexTrackerUserName}' not founded in Notion users DB");
+
+            return finded;
+        }
+
+        string GetAssigneeId(YandexTrackerIssue issue)
+        {
+            var search = string.IsNullOrWhiteSpace(issue.Assignee) ? issue.Author : issue.Assignee;
+            return GetNotionUser(search)?.Id ?? string.Empty;
         }
 
         private static void MapStatuses()
@@ -46,7 +66,7 @@ namespace YandexTrackerToNotion.Services
                 { "Протестировано", new NotionStatus { Status = "Протестировано", Emoji = "🤪" } },
                 { "Зарелизено", new NotionStatus { Status = "Зарелизено", Emoji = "🚀" } },
                 { "Решено", new NotionStatus { Status = "Решено", Emoji = "✅" } },
-                { "Закрыт", new NotionStatus { Status = "Решено", Emoji = "🏁" } }
+                { "Закрыт", new NotionStatus { Status = "Завершена", Emoji = "🏁" } }
             };
         }
 
@@ -56,41 +76,45 @@ namespace YandexTrackerToNotion.Services
                 new
                 {
                     parent = new { database_id = _databaseId },
-                    properties = new
+                    properties = new Dictionary<string, object>
                     {
-                        Title = new
+                        ["Name"] = new
                         {
                             title = new[] {
                                 new { text = new { content = notionObject.Title } }
                             }
                         },
-                        Description = new
+                        ["Описание"] = new
                         {
                             rich_text = new[] {
                                 new { text = new { content = notionObject.Description } }
                             }
                         },
-                        YTID = new
+                        ["YTID"] = new
                         {
                             rich_text = new[] {
                                 new { text = new { content = notionObject.YTID } }
                             }
                         },
-                        SpendMinutes = new
+                        ["Отработано минут"] = new
                         {
                             number = notionObject.Spent.TotalMinutes
                         },
-                        EstimateHour = new
+                        ["Оценка (час)"] = new
                         {
                             number = notionObject.Estimation.TotalMinutes
                         },
-                        OriginalEstimateHour = new
+                        ["Оценка исходная (час)"] = new
                         {
                             number = notionObject.OriginalEstimation.TotalMinutes
                         },
-                        Status = new
+                        ["Статус"] = new
                         {
                             select = new { name = notionObject.Status }
+                        },
+                        ["Ответственный"] = new
+                        {
+                            people = new[] { new { id = notionObject.AssigneeUserId } }
                         }
                     },
                     icon = new
@@ -124,6 +148,7 @@ namespace YandexTrackerToNotion.Services
             //TODO: add a null check for issue.id etc
             return new NotionObject
             {
+                Key = issue.Key,
                 Title = $"{issue.Key} : {issue.Summary}",
                 Description = issue.Description,
                 YTID = issue.Id,
@@ -131,7 +156,8 @@ namespace YandexTrackerToNotion.Services
                 Spent = TimeParser.ParseRussianTimeString(issue.Spent),
                 OriginalEstimation = originalEstimate,
                 Status = status.Status,
-                Emoji =  status.Emoji
+                Emoji = status.Emoji,
+                AssigneeUserId = GetAssigneeId(issue)
             };
         }
 

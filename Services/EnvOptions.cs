@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using YandexTrackerToNotion.Domain;
 using YandexTrackerToNotion.Interfaces;
 
 namespace YandexTrackerToNotion.Services
 {
     public class EnvOptions : IEnvOptions
-    {        
+    {
         public EnvOptions(IConfiguration configuration)
         {
             NotionDatabaseId = configuration["NOTION_DATABASE_ID"];
@@ -25,6 +26,27 @@ namespace YandexTrackerToNotion.Services
             TelegramBotChatId = configuration["TELEGRAM_CHAT_ID"];
             if (string.IsNullOrWhiteSpace(TelegramBotChatId))
                 throw new Exception("Environment variable TELEGRAM_CHAT_ID is unset.");
+
+
+
+            if (!bool.TryParse(configuration["IS_DEV_MODE"], out bool _isDevMode))
+                throw new Exception("Environment variable IS_DEV_MODE is unset.");
+            IsDevMode = _isDevMode;
+
+            LoadNotionUserDB();
+        }
+
+        void LoadNotionUserDB()
+        {
+            var filePath = "NotionUserDB.json";
+            if (!File.Exists(filePath))
+                throw new Exception("NotionUserDB.josn not found");
+
+            using (var reader = new StreamReader(filePath))
+            {
+                string jsonContent = reader.ReadToEnd();
+                NotionUsers = JsonConvert.DeserializeObject<List<NotionUser>>(jsonContent);
+            }
         }
 
         public string NotionDatabaseId { get; }
@@ -33,6 +55,7 @@ namespace YandexTrackerToNotion.Services
         public string NotionAPIVersionValue { get; }
         public string TelegramBotToken { get; }
         public string TelegramBotChatId { get; }
+        public bool IsDevMode { get; }
+        public List<NotionUser> NotionUsers { get; set; }
     }
 }
-

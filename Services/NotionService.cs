@@ -34,6 +34,9 @@ namespace YandexTrackerToNotion.Services
                     "https://api.notion.com/v1/pages",
                     GetRequestContent(_mapper.GetNotionObjectJson(notionObject)));
 
+            if (_options.IsDevMode)
+                await _telegramService.SendMessageAsync($"{notionObject.Key} CreatePageAsync, response status code is {response.StatusCode}");
+
             response.EnsureSuccessStatusCode();
         }
 
@@ -43,6 +46,9 @@ namespace YandexTrackerToNotion.Services
                 await _httpClient.PatchAsync(
                     $"https://api.notion.com/v1/pages/{pageId}",
                     GetRequestContent(_mapper.GetNotionObjectJson(notionObject)));
+
+            if (_options.IsDevMode)
+                await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, response status code is {response.StatusCode}");
 
             response.EnsureSuccessStatusCode();
         }
@@ -87,12 +93,18 @@ namespace YandexTrackerToNotion.Services
             if (IsPageFound(searchResult))
             {
                 // Если страница найдена, обновляем её
+                if(_options.IsDevMode)
+                    await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object finded in Notion db");
+
                 var pageId = findedItems.Results.First().Id;
                 await UpdatePageAsync(pageId, notionObject);
             }
             else
             {
                 // Если страница не найдена, создаём новую
+                if (_options.IsDevMode)
+                    await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object not found in Notion db, creating");
+
                 await CreatePageAsync(notionObject);
             }
         }

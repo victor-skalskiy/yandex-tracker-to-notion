@@ -6,7 +6,11 @@ namespace YandexTrackerToNotion.Domain
 
     public class YandexTrackerIssue
     {
+        [JsonProperty("packet.type")]
+        public string PacketType { get; set; }
+
         public string Key { get; set; }
+
         public string CurrentUser { get; set; }
 
         [JsonProperty("currentDateTime.date")]

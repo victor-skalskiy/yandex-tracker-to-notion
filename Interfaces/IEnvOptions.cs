@@ -1,4 +1,5 @@
-﻿using System;
+﻿using YandexTrackerToNotion.Domain;
+
 namespace YandexTrackerToNotion.Interfaces
 {
 	public interface IEnvOptions
@@ -9,6 +10,7 @@ namespace YandexTrackerToNotion.Interfaces
         string NotionAPIVersionValue { get; }
         string TelegramBotToken { get; }
         string TelegramBotChatId { get; }
+        bool IsDevMode { get; }
+        List<NotionUser> NotionUsers { get; set; }
     }
 }
-

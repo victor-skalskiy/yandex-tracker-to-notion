@@ -1,6 +1,4 @@
-﻿using System.Net.Http;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Options;
+﻿using System.Text;
 using Newtonsoft.Json;
 using YandexTrackerToNotion.Interfaces;
 
@@ -21,12 +19,7 @@ namespace YandexTrackerToNotion.Services
             _chatId = _options.TelegramBotChatId;
         }
 
-        public async Task SendMessageAsync(string message)
-        {
-            await SendMessageAsync(_chatId, message);
-        }
-
-        public async Task SendMessageAsync(string chatId, string message)
+        StringContent GetContent(string chatId, string message)
         {
             var payload = new
             {
@@ -34,9 +27,30 @@ namespace YandexTrackerToNotion.Services
                 text = message
             };
 
-            var content = new StringContent(JsonConvert.SerializeObject(payload), System.Text.Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync($"{_apiUrl}sendMessage", content);
+            return new StringContent(JsonConvert.SerializeObject(payload), Encoding.UTF8, "application/json");
+        }
+
+        public async Task SendMessageAsync(string message)
+        {
+            await SendMessageAsync(_chatId, message);
+        }
+
+        public async Task SendMessageAsync(string chatId, string message)
+        {            
+            var response = await _httpClient.PostAsync($"{_apiUrl}sendMessage", GetContent(chatId, message));
             response.EnsureSuccessStatusCode();
+        }
+
+        public void SendMessage(string message)
+        {
+            SendMessage(_options.TelegramBotChatId, message);
+        }
+
+        public void SendMessage(string chatId, string message)
+        {
+            var response = _httpClient.PostAsync($"{_apiUrl}sendMessage", GetContent(chatId, message));
+            if (!response.IsCompletedSuccessfully && _options.IsDevMode)
+                throw new Exception($"TelegramService.SendMessage exception: {response.Result}");
         }
     }
 }

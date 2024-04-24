@@ -14,21 +14,29 @@ public class WebhookController : ControllerBase
     private readonly ITelegramService _telegramService;
     private readonly INotionService _notionService;
     private readonly IMapperService _mapper;
+    private readonly IEnvOptions _options;
 
-    public WebhookController(HttpClient httpClient, ITelegramService telegramService, INotionService notionService, IMapperService mapper)
+    public WebhookController(HttpClient httpClient, ITelegramService telegramService, INotionService notionService,
+        IMapperService mapper, IEnvOptions options)
     {
         _telegramService = telegramService;
         _httpClient = httpClient;
         _notionService = notionService;
         _mapper = mapper;
+        _options = options;
     }
 
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] dynamic data)
-    {        
+    {
         try
         {
-            var notionObject = _mapper.YandexTrackerConvertToNotion($"{data}");
+
+            YandexTrackerIssue ytpackage = _mapper.GetYandexTrackerObject($"{data}");
+            if (_options.IsDevMode)
+                await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
+
+            var notionObject = _mapper.YandexTrackerConvertToNotion(ytpackage);
             await _notionService.CreateOrUpdatePageAsync(notionObject);
         }
         catch (Exception ex)
@@ -52,5 +60,4 @@ public class WebhookController : ControllerBase
         await _telegramService.SendMessageAsync("Telegram check pass.");
         return Ok();
     }
-
 }

@@ -5,5 +5,7 @@ namespace YandexTrackerToNotion.Interfaces
     {
         Task SendMessageAsync(string message);
         Task SendMessageAsync(string chatId, string message);
+        void SendMessage(string message);
+        void SendMessage(string chatId, string message);
     }
 }
