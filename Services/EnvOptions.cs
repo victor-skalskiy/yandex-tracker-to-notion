@@ -50,7 +50,7 @@ namespace YandexTrackerToNotion.Services
         {
             var filePath = "NotionUserDB.json";
             if (!File.Exists(filePath))
-                throw new Exception("NotionUserDB.josn not found");
+                throw new Exception("NotionUserDB.json not found");
 
             using (var reader = new StreamReader(filePath))
             {
