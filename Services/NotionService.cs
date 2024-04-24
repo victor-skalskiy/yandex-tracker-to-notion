@@ -11,6 +11,7 @@ namespace YandexTrackerToNotion.Services
         private readonly IMapperService _mapper;
         private readonly IEnvOptions _options;
         private readonly ITelegramService _telegramService;
+        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public NotionService(HttpClient httpClient, IMapperService mapper, IEnvOptions options, ITelegramService telegramService)
         {
@@ -87,25 +88,31 @@ namespace YandexTrackerToNotion.Services
 
         public async Task CreateOrUpdatePageAsync(NotionObject notionObject)
         {
-            var searchResult = await FindPageByIDAsync(notionObject.YTID);
-            var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(searchResult);
-
-            if (IsPageFound(searchResult))
+            await _semaphore.WaitAsync();
+            try
             {
-                // Если страница найдена, обновляем её
-                if(_options.IsDevMode)
-                    await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object finded in Notion db");
+                var searchResult = await FindPageByIDAsync(notionObject.YTID);
+                var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(searchResult);
 
-                var pageId = findedItems.Results.First().Id;
-                await UpdatePageAsync(pageId, notionObject);
+                if (IsPageFound(searchResult))
+                {
+                    if (_options.IsDevMode)
+                        await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object found in Notion db");
+
+                    var pageId = findedItems.Results.First().Id;
+                    await UpdatePageAsync(pageId, notionObject);
+                }
+                else
+                {
+                    if (_options.IsDevMode)
+                        await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object not found in Notion db, creating");
+
+                    await CreatePageAsync(notionObject);
+                }
             }
-            else
+            finally
             {
-                // Если страница не найдена, создаём новую
-                if (_options.IsDevMode)
-                    await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object not found in Notion db, creating");
-
-                await CreatePageAsync(notionObject);
+                _semaphore.Release();
             }
         }
 
