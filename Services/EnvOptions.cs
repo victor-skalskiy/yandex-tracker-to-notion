@@ -27,11 +27,17 @@ namespace YandexTrackerToNotion.Services
             if (string.IsNullOrWhiteSpace(TelegramBotChatId))
                 throw new Exception("Environment variable TELEGRAM_CHAT_ID is unset.");
 
-
-
             if (!bool.TryParse(configuration["IS_DEV_MODE"], out bool _isDevMode))
                 throw new Exception("Environment variable IS_DEV_MODE is unset.");
             IsDevMode = _isDevMode;
+
+            YandexTrackerAuthorizationToken = configuration["YANDEX_TRACKER_AUTHORIZATION_TOKEN"];
+            if (string.IsNullOrWhiteSpace(YandexTrackerAuthorizationToken))
+                throw new Exception("Environment variable YANDEX_TRACKER_AUTHORIZATION_TOKEN is unset.");
+
+            if (!bool.TryParse(configuration["DISABLE_AUTHORIZATION"], out bool _disableAuth))
+                throw new Exception("Environment variable DISABLE_AUTHORIZATION is unset.");
+            DisableAuth = _disableAuth; 
 
             LoadNotionUserDB();
         }
@@ -55,7 +61,9 @@ namespace YandexTrackerToNotion.Services
         public string NotionAPIVersionValue { get; }
         public string TelegramBotToken { get; }
         public string TelegramBotChatId { get; }
+        public string YandexTrackerAuthorizationToken { get; }
         public bool IsDevMode { get; }
+        public bool DisableAuth { get; }
         public List<NotionUser> NotionUsers { get; set; }
     }
 }

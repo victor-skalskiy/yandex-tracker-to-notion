@@ -43,13 +43,14 @@ namespace YandexTrackerToNotion.Services
 
         async Task UpdatePageAsync(string pageId, NotionObject notionObject)
         {
+            var content = _mapper.GetNotionObjectJson(notionObject);
             var response =
                 await _httpClient.PatchAsync(
                     $"https://api.notion.com/v1/pages/{pageId}",
-                    GetRequestContent(_mapper.GetNotionObjectJson(notionObject)));
+                    GetRequestContent(content));
 
             if (_options.IsDevMode)
-                await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, response status code is {response.StatusCode}");
+                await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, response status code is {response.StatusCode}\r\nContent:\r\n{content}");
 
             response.EnsureSuccessStatusCode();
         }

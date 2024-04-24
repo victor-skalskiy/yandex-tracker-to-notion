@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using YandexTrackerToNotion.Services;
 using YandexTrackerToNotion.Interfaces;
 using YandexTrackerToNotion.Domain;
+using YandexTrackerToNotion.Extentions;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -15,26 +16,33 @@ public class WebhookController : ControllerBase
     private readonly INotionService _notionService;
     private readonly IMapperService _mapper;
     private readonly IEnvOptions _options;
+    private readonly IHelperService _helperService;
 
     public WebhookController(HttpClient httpClient, ITelegramService telegramService, INotionService notionService,
-        IMapperService mapper, IEnvOptions options)
+        IMapperService mapper, IEnvOptions options, IHelperService helperService)
     {
         _telegramService = telegramService;
         _httpClient = httpClient;
         _notionService = notionService;
         _mapper = mapper;
         _options = options;
+        _helperService = helperService;
     }
 
+    [TokenAuthorization]
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] dynamic data)
     {
         try
         {
-
             YandexTrackerIssue ytpackage = _mapper.GetYandexTrackerObject($"{data}");
             if (_options.IsDevMode)
-                await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
+            {
+                if (_options.DisableAuth)
+                    await _telegramService.SendMessageAsync(_helperService.GetRequestFullBody(Request, $"{data}"));
+                else
+                    await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
+            }
 
             var notionObject = _mapper.YandexTrackerConvertToNotion(ytpackage);
             await _notionService.CreateOrUpdatePageAsync(notionObject);

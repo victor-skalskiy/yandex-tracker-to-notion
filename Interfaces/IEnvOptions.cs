@@ -11,6 +11,8 @@ namespace YandexTrackerToNotion.Interfaces
         string TelegramBotToken { get; }
         string TelegramBotChatId { get; }
         bool IsDevMode { get; }
+        bool DisableAuth { get; }
         List<NotionUser> NotionUsers { get; set; }
+        string YandexTrackerAuthorizationToken { get; }
     }
 }

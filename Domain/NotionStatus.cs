@@ -5,7 +5,7 @@ namespace YandexTrackerToNotion.Domain
     {
         public NotionStatus() { }
 
-        public string Status { get; set; }
+        public string? Status { get; set; }
         public string? Emoji { get; set; }
     }
 }

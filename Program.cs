@@ -9,7 +9,8 @@ builder.Services
     .AddSingleton<IEnvOptions, EnvOptions>()
     .AddSingleton<ITelegramService, TelegramService>()
     .AddSingleton<INotionService, NotionService>()
-    .AddSingleton<IMapperService, MapperService>();
+    .AddSingleton<IMapperService, MapperService>()
+    .AddSingleton<IHelperService, HelperService>();
 
 builder.Services.AddHttpClient("TelegramClient");
 builder.Services.AddHttpClient("MapperClient");
