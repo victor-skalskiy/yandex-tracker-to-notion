@@ -1,5 +1,4 @@
-﻿using System;
-namespace YandexTrackerToNotion.Domain
+﻿namespace YandexTrackerToNotion.Domain
 {
     public class NotionStatus
     {

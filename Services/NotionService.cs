@@ -30,13 +30,15 @@ namespace YandexTrackerToNotion.Services
 
         async Task CreatePageAsync(NotionObject notionObject)
         {
+            var content = _mapper.GetNotionObjectJson(notionObject);
+
             var response =
                 await _httpClient.PostAsync(
                     "https://api.notion.com/v1/pages",
-                    GetRequestContent(_mapper.GetNotionObjectJson(notionObject)));
+                    GetRequestContent(content));
 
             if (_options.IsDevMode)
-                await _telegramService.SendMessageAsync($"{notionObject.Key} CreatePageAsync, response status code is {response.StatusCode}");
+                await _telegramService.SendMessageAsync($"{notionObject.Key} CreatePageAsync, response status code is {response.StatusCode}\r\nContent:\r\n{content}");
 
             response.EnsureSuccessStatusCode();
         }
@@ -44,6 +46,7 @@ namespace YandexTrackerToNotion.Services
         async Task UpdatePageAsync(string pageId, NotionObject notionObject)
         {
             var content = _mapper.GetNotionObjectJson(notionObject);
+
             var response =
                 await _httpClient.PatchAsync(
                     $"https://api.notion.com/v1/pages/{pageId}",
@@ -77,14 +80,10 @@ namespace YandexTrackerToNotion.Services
 
             var content = GetRequestContent(JsonConvert.SerializeObject(query));
             var response = await _httpClient.PostAsync($"https://api.notion.com/v1/databases/{_options.NotionDatabaseId}/query", content);
-            var responseContent = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception($"Failed to search for page by YTID: {responseContent}");
-            }
+            response.EnsureSuccessStatusCode();
 
-            return responseContent;
+            return await response.Content.ReadAsStringAsync();
         }
 
         public async Task CreateOrUpdatePageAsync(NotionObject notionObject)
@@ -111,6 +110,10 @@ namespace YandexTrackerToNotion.Services
                     await CreatePageAsync(notionObject);
                 }
             }
+            catch (Exception ex)
+            {
+                SentrySdk.CaptureException(ex);
+            }
             finally
             {
                 _semaphore.Release();
@@ -120,8 +123,9 @@ namespace YandexTrackerToNotion.Services
         public async Task<string> GetPageStructAsync()
         {
             var response = await _httpClient.GetAsync($"https://api.notion.com/v1/databases/{_options.NotionDatabaseId}");
-            var responseContent = await response.Content.ReadAsStringAsync();
-            return responseContent;
+            response.EnsureSuccessStatusCode();
+
+            return await response.Content.ReadAsStringAsync();
         }
     }
 }

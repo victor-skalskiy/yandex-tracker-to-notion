@@ -2,10 +2,7 @@
 {
     public class NotionObject
     {
-        public NotionObject()
-        {
-            //Components = new List<NotionMultiSelectProperty>();
-        }
+        public NotionObject() { }
 
         public string? Key { get; set; }
         public string? Object { get; set; }
@@ -19,7 +16,6 @@
         public string? Emoji { get; set; }
         public string? Status { get; set; }
         public string? AssigneeUserId { get; set; }
-        //public List<NotionMultiSelectProperty> Components { get; set; }
         public List<string> Project { get; set; }
         public List<string> Components { get; set; }
     }

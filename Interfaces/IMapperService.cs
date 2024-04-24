@@ -1,5 +1,4 @@
-﻿using System;
-using YandexTrackerToNotion.Domain;
+﻿using YandexTrackerToNotion.Domain;
 
 namespace YandexTrackerToNotion.Interfaces
 {

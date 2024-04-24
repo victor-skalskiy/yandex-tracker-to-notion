@@ -2,8 +2,6 @@
 using YandexTrackerToNotion.Domain;
 using YandexTrackerToNotion.Interfaces;
 using YandexTrackerToNotion.Extentions;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System;
 
 namespace YandexTrackerToNotion.Services
 {

@@ -37,7 +37,11 @@ namespace YandexTrackerToNotion.Services
 
             if (!bool.TryParse(configuration["DISABLE_AUTHORIZATION"], out bool _disableAuth))
                 throw new Exception("Environment variable DISABLE_AUTHORIZATION is unset.");
-            DisableAuth = _disableAuth; 
+            DisableAuth = _disableAuth;
+
+            SentryDsn = configuration["SENTRY_DSN"];
+            if (string.IsNullOrWhiteSpace(SentryDsn))
+                throw new Exception("Environment variable SENTRY_DSN is unset.");
 
             LoadNotionUserDB();
         }
@@ -65,5 +69,6 @@ namespace YandexTrackerToNotion.Services
         public bool IsDevMode { get; }
         public bool DisableAuth { get; }
         public List<NotionUser> NotionUsers { get; set; }
+        public string SentryDsn { get; }
     }
 }

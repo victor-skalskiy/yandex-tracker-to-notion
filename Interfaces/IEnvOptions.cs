@@ -14,5 +14,6 @@ namespace YandexTrackerToNotion.Interfaces
         bool DisableAuth { get; }
         List<NotionUser> NotionUsers { get; set; }
         string YandexTrackerAuthorizationToken { get; }
+        string SentryDsn { get; }
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-namespace YandexTrackerToNotion.Interfaces
+﻿namespace YandexTrackerToNotion.Interfaces
 {
     public interface ITelegramService
     {

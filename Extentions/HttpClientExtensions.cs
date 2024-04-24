@@ -1,5 +1,4 @@
-﻿using System;
-namespace YandexTrackerToNotion.Extentions
+﻿namespace YandexTrackerToNotion.Extentions
 {
     public static class HttpClientExtensions
     {

@@ -1,8 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Threading.Tasks;
-using System.Net.Http;
-using Newtonsoft.Json;
-using YandexTrackerToNotion.Services;
 using YandexTrackerToNotion.Interfaces;
 using YandexTrackerToNotion.Domain;
 using YandexTrackerToNotion.Extentions;
@@ -49,6 +45,7 @@ public class WebhookController : ControllerBase
         }
         catch (Exception ex)
         {
+            SentrySdk.CaptureException(ex);
             await _telegramService.SendMessageAsync($"/WebHook.Post exception: {ex.Message}\r\nSource: {ex.Source}\r\nStack trace: {ex.StackTrace}\r\nInput data: {data}");
         }
 
@@ -58,14 +55,31 @@ public class WebhookController : ControllerBase
     [HttpGet("get-notion-database-properties")]
     public async Task<IActionResult> GetDatabaseProperties()
     {
-        var properties = await _notionService.GetPageStructAsync();
-        return Ok(properties);
+        var result = "";
+        try
+        {
+            result = await _notionService.GetPageStructAsync();
+        }
+        catch (Exception ex)
+        {
+            SentrySdk.CaptureException(ex);
+        }
+
+        return Ok(result);
     }
 
     [HttpGet("check-telegram")]
     public async Task<IActionResult> CheckTelegram()
     {
-        await _telegramService.SendMessageAsync("Telegram check pass.");
+        try
+        {
+            await _telegramService.SendMessageAsync("Telegram check pass.");
+        }
+        catch (Exception ex)
+        {
+            SentrySdk.CaptureException(ex);
+        }
+
         return Ok();
     }
 }
