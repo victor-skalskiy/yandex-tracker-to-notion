@@ -40,7 +40,7 @@ public class WebhookController : ControllerBase
                     await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
             }
 
-            var notionObject = _mapper.YandexTrackerConvertToNotion(ytpackage);
+            var notionObject = _mapper.GetNotionObject(ytpackage);
             await _notionService.CreateOrUpdatePageAsync(notionObject);
         }
         catch (Exception ex)

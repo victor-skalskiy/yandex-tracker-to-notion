@@ -16,7 +16,25 @@ namespace YandexTrackerToNotion.Domain
         /// <summary>
         /// User type, can be 'person' or 'bot'
         /// </summary>
-        public string Type { get; set; } 
+        public string Type { get; set; }
+
+        public dynamic ToCommentJSON()
+        {
+            //TODO: move it to the service once active development is complete
+            return new
+            {
+                type = "text",
+                text = new
+                {
+                    content = Name
+                },
+                annotations = new
+                {
+                    bold = true, // Жирный текст
+                    color = "yellow_background" // Желтый фон
+                }
+            };
+        }
     }
 
     public class NotionUsersResponse

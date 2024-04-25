@@ -72,71 +72,6 @@ namespace YandexTrackerToNotion.Services
             return new NotionStatus { Status = "Неизвестно", Emoji = "❓" };
         }
 
-        public string GetNotionObjectJson(NotionObject notionObject)
-        {
-            var json = JsonConvert.SerializeObject(
-                new
-                {
-                    parent = new { database_id = _databaseId },
-                    properties = new Dictionary<string, object>
-                    {
-                        ["Name"] = new
-                        {
-                            title = new[] {
-                                new { text = new { content = notionObject.Title } }
-                            }
-                        },
-                        ["Описание"] = new
-                        {
-                            rich_text = new[] {
-                                new { text = new { content = notionObject.Description } }
-                            }
-                        },
-                        ["YTID"] = new
-                        {
-                            rich_text = new[] {
-                                new { text = new { content = notionObject.YTID } }
-                            }
-                        },
-                        ["Отработано минут"] = new
-                        {
-                            number = notionObject.Spent.TotalMinutes
-                        },
-                        ["Оценка (час)"] = new
-                        {
-                            number = notionObject.Estimation.TotalMinutes
-                        },
-                        ["Оценка исходная (час)"] = new
-                        {
-                            number = notionObject.OriginalEstimation.TotalMinutes
-                        },
-                        ["Статус"] = new
-                        {
-                            select = new { name = notionObject.Status }
-                        },
-                        ["Ответственный"] = new
-                        {
-                            people = new[] { new { id = notionObject.AssigneeUserId } }
-                        },
-                        ["Компоненты разработки"] = new
-                        {
-                            multi_select = notionObject.Components.Select(c => new { name = c }).ToList()
-                        },
-                        ["Проект"] = new
-                        {
-                            multi_select = notionObject.Project.Select(p => new { name = p }).ToList()
-                        }
-                    },
-                    icon = new
-                    {
-                        type = "emoji",
-                        emoji = notionObject.Emoji
-                    }
-                });
-
-            return json;
-        }
-
         public YandexTrackerIssue GetYandexTrackerObject(string jsonString)
         {
             var result = JsonConvert.DeserializeObject<YandexTrackerIssue>(jsonString);
@@ -145,19 +80,20 @@ namespace YandexTrackerToNotion.Services
                 : result;
         }
 
-        public NotionObject YandexTrackerConvertToNotion(string json)
+        public NotionObject GetNotionObject(string json)
         {
-            return YandexTrackerConvertToNotion(GetYandexTrackerObject(json));
+            return GetNotionObject(GetYandexTrackerObject(json));
         }
 
-        public NotionObject YandexTrackerConvertToNotion(YandexTrackerIssue issue)
+        public NotionObject GetNotionObject(YandexTrackerIssue issue)
         {
             CalculateEstimates(issue, out TimeSpan estimate, out TimeSpan originalEstimate);
             var status = statusList.ContainsKey(issue.Status) ? statusList[issue.Status] : _unknownNotionStatus;
 
-            //TODO: add a null check for issue.id etc
             return new NotionObject
             {
+                Issue = issue,
+                DatabaseId = _databaseId,
                 Key = issue.Key,
                 Title = $"{issue.Key} : {issue.Summary}",
                 Description = issue.Description,
@@ -170,15 +106,24 @@ namespace YandexTrackerToNotion.Services
                 AssigneeUserId = GetAssigneeId(issue),
                 Project = new List<string> { issue.Project },
                 Components = issue.Components.Split(new[] { ',' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList()
-
             };
         }
 
-        public string Mapping(string jsonString)
+        public NotionComment GetNotionComment(NotionObject notionObject)
         {
-            return GetNotionObjectJson(
-                        YandexTrackerConvertToNotion(
-                            GetYandexTrackerObject(jsonString)));
+            var author = GetNotionUser(notionObject.Issue.CommentAuthor);
+
+            if (author is null)
+                throw new Exception($"Can't find User {notionObject.Issue.CommentAuthor} for add comment.");
+
+            return new NotionComment
+            {
+                AuthorId = notionObject.Issue.CommentAuthor,
+                Author = author,
+                PageId = notionObject.PageId,
+                Text = notionObject.Issue.CommentText,
+                Id = notionObject.Issue.CommentId
+            };
         }
     }
 }

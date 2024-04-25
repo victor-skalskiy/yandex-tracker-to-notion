@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using YandexTrackerToNotion.Domain;
 using YandexTrackerToNotion.Interfaces;
@@ -30,7 +31,7 @@ namespace YandexTrackerToNotion.Services
 
         async Task CreatePageAsync(NotionObject notionObject)
         {
-            var content = _mapper.GetNotionObjectJson(notionObject);
+            var content = notionObject.ToJSONString();
 
             var response =
                 await _httpClient.PostAsync(
@@ -43,13 +44,13 @@ namespace YandexTrackerToNotion.Services
             response.EnsureSuccessStatusCode();
         }
 
-        async Task UpdatePageAsync(string pageId, NotionObject notionObject)
+        async Task UpdatePageAsync(NotionObject notionObject)
         {
-            var content = _mapper.GetNotionObjectJson(notionObject);
+            var content = notionObject.ToJSONString();
 
             var response =
                 await _httpClient.PatchAsync(
-                    $"https://api.notion.com/v1/pages/{pageId}",
+                    $"https://api.notion.com/v1/pages/{notionObject.PageId}",
                     GetRequestContent(content));
 
             if (_options.IsDevMode)
@@ -64,21 +65,9 @@ namespace YandexTrackerToNotion.Services
             return responseObject.Results != null && responseObject.Results.Any();
         }
 
-        async Task<string> FindPageByIDAsync(string ytId)
+        async Task<string> FindPageByIDAsync(NotionObject notionObject)
         {
-            var query = new
-            {
-                filter = new
-                {
-                    property = "YTID",
-                    rich_text = new
-                    {
-                        equals = ytId
-                    }
-                }
-            };
-
-            var content = GetRequestContent(JsonConvert.SerializeObject(query));
+            var content = GetRequestContent(notionObject.ToSearchJSONString());
             var response = await _httpClient.PostAsync($"https://api.notion.com/v1/databases/{_options.NotionDatabaseId}/query", content);
 
             response.EnsureSuccessStatusCode();
@@ -91,7 +80,7 @@ namespace YandexTrackerToNotion.Services
             await _semaphore.WaitAsync();
             try
             {
-                var searchResult = await FindPageByIDAsync(notionObject.YTID);
+                var searchResult = await FindPageByIDAsync(notionObject);
                 var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(searchResult);
 
                 if (IsPageFound(searchResult))
@@ -99,8 +88,18 @@ namespace YandexTrackerToNotion.Services
                     if (_options.IsDevMode)
                         await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object found in Notion db");
 
-                    var pageId = findedItems.Results.First().Id;
-                    await UpdatePageAsync(pageId, notionObject);
+                    notionObject.PageId = findedItems.Results.First().Id;
+                    await UpdatePageAsync(notionObject);
+
+                    // add comment to updated item
+                    if (!string.IsNullOrWhiteSpace(notionObject.Issue.CommentText))
+                    {
+                        if (_options.IsDevMode)
+                            await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, going to process comments");
+
+                        var comment = _mapper.GetNotionComment(notionObject);
+                        await AddCommentToPageAsync(comment);
+                    }
                 }
                 else
                 {
@@ -126,6 +125,30 @@ namespace YandexTrackerToNotion.Services
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadAsStringAsync();
+        }
+
+        private async Task AddCommentToPageAsync(NotionComment notionComment)
+        {
+            var content = notionComment.ToJSONString();
+
+            var response = await _httpClient.PostAsync(
+                                    "https://api.notion.com/v1/comments",
+                                    GetRequestContent(content));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                if (_options.IsDevMode)
+                    await _telegramService.SendMessageAsync($"Failed to add comment to Notion page. Status: {response.StatusCode}. Server error: {errorContent}");
+
+                SentrySdk.CaptureException(new Exception($"Failed to add comment: {errorContent}"));
+            }
+            else if (_options.IsDevMode)
+            {
+                await _telegramService.SendMessageAsync($"Comment added to Notion page {notionComment.PageId}");
+            }
+
+            response.EnsureSuccessStatusCode();
         }
     }
 }

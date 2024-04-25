@@ -12,6 +12,15 @@ namespace YandexTrackerToNotion.Domain
 
         public string CurrentUser { get; set; }
 
+        [JsonProperty("userComment.id")]
+        public string CommentId { get; set; }
+
+        [JsonProperty("userComment.author")]
+        public string CommentAuthor { get; set; }
+
+        [JsonProperty("userComment.text")]
+        public string CommentText { get; set; }
+
         [JsonProperty("currentDateTime.date")]
         public string CurrentDateTime { get; set; }
 
