@@ -104,7 +104,7 @@ namespace YandexTrackerToNotion.Services
                 AssigneeUserId = GetNotionUser(searchAssigneeUser)?.Id ?? string.Empty,
                 Project = string.IsNullOrWhiteSpace(issue.Project) ? null : new List<string> { issue.Project },
                 Components = components.Any() ? components : null,
-                DueDate = DateTime.Parse(issue.DueDate)
+                DueDate = string.IsNullOrWhiteSpace(issue.DueDate) ? DateTime.MinValue : DateTime.Parse(issue.DueDate)
             };
         }
 
@@ -149,10 +149,6 @@ namespace YandexTrackerToNotion.Services
                     ["Статус"] = new
                     {
                         select = new { name = notionObject.Status }
-                    },
-                    ["Ответственный"] = new
-                    {
-                        people = new[] { new { id = notionObject.AssigneeUserId } }
                     }
                 },
                 icon = new
@@ -161,6 +157,11 @@ namespace YandexTrackerToNotion.Services
                     emoji = notionObject.Emoji
                 }
             };
+
+            if (!string.IsNullOrWhiteSpace(notionObject.AssigneeUserId))
+            {
+                result.properties.Add("Ответственный", new { people = new[] { new { id = notionObject.AssigneeUserId } } });
+            }
 
             if (notionObject.Components is not null)
             {

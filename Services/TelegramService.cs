@@ -51,7 +51,7 @@ namespace YandexTrackerToNotion.Services
         {
             var response = _httpClient.PostAsync($"{_apiUrl}sendMessage", GetContent(chatId, message));
 
-            if (!response.IsCompletedSuccessfully)
+            if (!response.Result.IsSuccessStatusCode)
                 throw new Exception($"TelegramService.SendMessage exception: {response.Result}");
         }
     }
