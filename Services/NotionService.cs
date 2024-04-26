@@ -1,5 +1,4 @@
 ﻿using System.Text;
-using Microsoft.AspNetCore.Mvc.RazorPages;
 using Newtonsoft.Json;
 using YandexTrackerToNotion.Domain;
 using YandexTrackerToNotion.Interfaces;
@@ -31,14 +30,14 @@ namespace YandexTrackerToNotion.Services
 
         async Task CreatePageAsync(NotionObject notionObject)
         {
-            var content = notionObject.ToJSONString();
+            var content = _mapper.SerializeNotionObject(notionObject);
 
             var response =
                 await _httpClient.PostAsync(
                     "https://api.notion.com/v1/pages",
                     GetRequestContent(content));
 
-            if (_options.IsDevMode)
+            if (_options.IsDevMode && !response.IsSuccessStatusCode)
                 await _telegramService.SendMessageAsync($"{notionObject.Key} CreatePageAsync, response status code is {response.StatusCode}\r\nContent:\r\n{content}");
 
             response.EnsureSuccessStatusCode();
@@ -46,28 +45,22 @@ namespace YandexTrackerToNotion.Services
 
         async Task UpdatePageAsync(NotionObject notionObject)
         {
-            var content = notionObject.ToJSONString();
+            var content = _mapper.SerializeNotionObject(notionObject);
 
             var response =
                 await _httpClient.PatchAsync(
                     $"https://api.notion.com/v1/pages/{notionObject.PageId}",
                     GetRequestContent(content));
 
-            if (_options.IsDevMode)
+            if (_options.IsDevMode && !response.IsSuccessStatusCode)
                 await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, response status code is {response.StatusCode}\r\nContent:\r\n{content}");
 
             response.EnsureSuccessStatusCode();
         }
 
-        static bool IsPageFound(string searchResponse)
-        {
-            var responseObject = JsonConvert.DeserializeObject<NotionSearchResponse>(searchResponse);
-            return responseObject.Results != null && responseObject.Results.Any();
-        }
-
         async Task<string> FindPageByIDAsync(NotionObject notionObject)
         {
-            var content = GetRequestContent(notionObject.ToSearchJSONString());
+            var content = GetRequestContent(_mapper.SerializeNotionSearchObject(notionObject));
             var response = await _httpClient.PostAsync($"https://api.notion.com/v1/databases/{_options.NotionDatabaseId}/query", content);
 
             response.EnsureSuccessStatusCode();
@@ -80,38 +73,30 @@ namespace YandexTrackerToNotion.Services
             await _semaphore.WaitAsync();
             try
             {
-                var searchResult = await FindPageByIDAsync(notionObject);
-                var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(searchResult);
+                var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(
+                                    await FindPageByIDAsync(notionObject))?.Results ?? new List<NotionObject>();
 
-                if (IsPageFound(searchResult))
+                if (findedItems.Any())
                 {
-                    if (_options.IsDevMode)
-                        await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object found in Notion db");
-
-                    notionObject.PageId = findedItems.Results.First().Id;
+                    notionObject.PageId = findedItems.First().Id;
                     await UpdatePageAsync(notionObject);
 
                     // add comment to updated item
                     if (!string.IsNullOrWhiteSpace(notionObject.Issue.CommentText))
                     {
-                        if (_options.IsDevMode)
-                            await _telegramService.SendMessageAsync($"{notionObject.Key} UpdatePageAsync, going to process comments");
-
                         var comment = _mapper.GetNotionComment(notionObject);
                         await AddCommentToPageAsync(comment);
                     }
                 }
                 else
                 {
-                    if (_options.IsDevMode)
-                        await _telegramService.SendMessageAsync($"{notionObject.Key} CreateOrUpdatePageAsync, object not found in Notion db, creating");
-
                     await CreatePageAsync(notionObject);
                 }
             }
-            catch (Exception ex)
-            {
-                SentrySdk.CaptureException(ex);
+            catch (Exception)
+            {                
+                _semaphore.Release();
+                throw;
             }
             finally
             {
@@ -129,7 +114,7 @@ namespace YandexTrackerToNotion.Services
 
         private async Task AddCommentToPageAsync(NotionComment notionComment)
         {
-            var content = notionComment.ToJSONString();
+            var content = _mapper.SerializeNotionComment(notionComment);
 
             var response = await _httpClient.PostAsync(
                                     "https://api.notion.com/v1/comments",
@@ -139,14 +124,10 @@ namespace YandexTrackerToNotion.Services
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
                 if (_options.IsDevMode)
-                    await _telegramService.SendMessageAsync($"Failed to add comment to Notion page. Status: {response.StatusCode}. Server error: {errorContent}");
+                    await _telegramService.SendMessageAsync($"AddCommentToPageAsync: Failed to add comment to Notion page. Status: {response.StatusCode}.\r\nServer error: {errorContent}\r\nContent: {content}");
 
-                SentrySdk.CaptureException(new Exception($"Failed to add comment: {errorContent}"));
-            }
-            else if (_options.IsDevMode)
-            {
-                await _telegramService.SendMessageAsync($"Comment added to Notion page {notionComment.PageId}");
-            }
+                SentrySdk.CaptureMessage($"AddCommentToPageAsync: Failed to add comment: {errorContent}, content: {content}", SentryLevel.Error);
+            }            
 
             response.EnsureSuccessStatusCode();
         }

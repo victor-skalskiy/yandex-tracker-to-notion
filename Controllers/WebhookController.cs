@@ -7,18 +7,16 @@ using YandexTrackerToNotion.Extentions;
 [ApiController]
 public class WebhookController : ControllerBase
 {
-    private readonly HttpClient _httpClient;
     private readonly ITelegramService _telegramService;
     private readonly INotionService _notionService;
     private readonly IMapperService _mapper;
     private readonly IEnvOptions _options;
     private readonly IHelperService _helperService;
 
-    public WebhookController(HttpClient httpClient, ITelegramService telegramService, INotionService notionService,
-        IMapperService mapper, IEnvOptions options, IHelperService helperService)
+    public WebhookController(ITelegramService telegramService, INotionService notionService, IMapperService mapper,
+        IEnvOptions options, IHelperService helperService)
     {
         _telegramService = telegramService;
-        _httpClient = httpClient;
         _notionService = notionService;
         _mapper = mapper;
         _options = options;
@@ -33,12 +31,7 @@ public class WebhookController : ControllerBase
         {
             YandexTrackerIssue ytpackage = _mapper.GetYandexTrackerObject($"{data}");
             if (_options.IsDevMode)
-            {
-                if (_options.DisableAuth)
-                    await _telegramService.SendMessageAsync(_helperService.GetRequestFullBody(Request, $"{data}"));
-                else
-                    await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
-            }
+                await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
 
             var notionObject = _mapper.GetNotionObject(ytpackage);
             await _notionService.CreateOrUpdatePageAsync(notionObject);
@@ -46,7 +39,7 @@ public class WebhookController : ControllerBase
         catch (Exception ex)
         {
             SentrySdk.CaptureException(ex);
-            await _telegramService.SendMessageAsync($"/WebHook.Post exception: {ex.Message}\r\nSource: {ex.Source}\r\nStack trace: {ex.StackTrace}\r\nInput data: {data}");
+            await _telegramService.SendMessageAsync($"/WebHook.Post exception: {ex.Message}\r\nSource: {ex.Source}\r\nStack trace: {ex.StackTrace}\r\nRequest: {_helperService.GetRequestFullBody(Request, $"{data}")}");
         }
 
         return Ok();

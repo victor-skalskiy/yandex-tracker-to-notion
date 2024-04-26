@@ -8,17 +8,15 @@ namespace YandexTrackerToNotion.Services
     public class MapperService : IMapperService
     {
         private readonly string _databaseId;
-        private readonly HttpClient _httpClient;
         private readonly IEnvOptions _options;
         private static Dictionary<string, NotionStatus> statusList;
         private readonly ITelegramService _telegramService;
         private readonly NotionStatus _unknownNotionStatus;
 
-        public MapperService(HttpClient httpClient, IEnvOptions options, ITelegramService telegramService)
+        public MapperService(IEnvOptions options, ITelegramService telegramService)
         {
             _options = options;
             _databaseId = _options.NotionDatabaseId;
-            _httpClient = httpClient;
             _telegramService = telegramService;
             _unknownNotionStatus = MapStatuses();
         }
@@ -43,14 +41,10 @@ namespace YandexTrackerToNotion.Services
 
             if (finded is null && _options.IsDevMode)
                 _telegramService.SendMessage($"YandexTracker user named '{yandexTrackerUserName}' not founded in Notion users DB");
+            else if (finded is null)
+                SentrySdk.CaptureMessage($"YandexTracker user named '{yandexTrackerUserName}' not founded in Notion users DB", SentryLevel.Error);
 
             return finded;
-        }
-
-        string GetAssigneeId(YandexTrackerIssue issue)
-        {
-            var search = string.IsNullOrWhiteSpace(issue.Assignee) ? issue.Author : issue.Assignee;
-            return GetNotionUser(search)?.Id ?? string.Empty;
         }
 
         NotionStatus MapStatuses()
@@ -75,9 +69,11 @@ namespace YandexTrackerToNotion.Services
         public YandexTrackerIssue GetYandexTrackerObject(string jsonString)
         {
             var result = JsonConvert.DeserializeObject<YandexTrackerIssue>(jsonString);
-            return result is null
-                ? throw new Exception($"GetYandexTrackerObject: can't deserialize object by json: {jsonString}")
-                : result;
+
+            if (result is null)
+                throw new Exception($"GetYandexTrackerObject: can't deserialize json object");
+
+            return result;
         }
 
         public NotionObject GetNotionObject(string json)
@@ -89,6 +85,8 @@ namespace YandexTrackerToNotion.Services
         {
             CalculateEstimates(issue, out TimeSpan estimate, out TimeSpan originalEstimate);
             var status = statusList.ContainsKey(issue.Status) ? statusList[issue.Status] : _unknownNotionStatus;
+            var components = issue.Components.Split(new[] { ',' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList();
+            var searchAssigneeUser = string.IsNullOrWhiteSpace(issue.Assignee) ? issue.Author : issue.Assignee;
 
             return new NotionObject
             {
@@ -103,9 +101,9 @@ namespace YandexTrackerToNotion.Services
                 OriginalEstimation = originalEstimate,
                 Status = status.Status,
                 Emoji = status.Emoji,
-                AssigneeUserId = GetAssigneeId(issue),
-                Project = new List<string> { issue.Project },
-                Components = issue.Components.Split(new[] { ',' }, StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries).ToList()
+                AssigneeUserId = GetNotionUser(searchAssigneeUser)?.Id ?? string.Empty,
+                Project = string.IsNullOrWhiteSpace(issue.Project) ? null : new List<string> { issue.Project },
+                Components = components.Any() ? components : null
             };
         }
 
@@ -125,5 +123,118 @@ namespace YandexTrackerToNotion.Services
                 Id = notionObject.Issue.CommentId
             };
         }
+
+        public string SerializeNotionObject(NotionObject notionObject)
+        {
+            var result = new
+            {
+                parent = new { database_id = notionObject.DatabaseId },
+                properties = new Dictionary<string, dynamic>
+                {
+                    ["Name"] = new
+                    {
+                        title = new[] { new { text = new { content = notionObject.Title } } }
+                    },
+                    ["Описание"] = new
+                    {
+                        rich_text = new[] { new { text = new { content = notionObject.Description } } }
+                    },
+                    ["YTID"] = new
+                    {
+                        rich_text = new[] { new { text = new { content = notionObject.YTID } } }
+                    },
+                    ["Отработано минут"] = new
+                    {
+                        number = notionObject.Spent.TotalMinutes
+                    },
+                    ["Оценка (час)"] = new
+                    {
+                        number = notionObject.Estimation.TotalMinutes
+                    },
+                    ["Оценка исходная (час)"] = new
+                    {
+                        number = notionObject.OriginalEstimation.TotalMinutes
+                    },
+                    ["Статус"] = new
+                    {
+                        select = new { name = notionObject.Status }
+                    },
+                    ["Ответственный"] = new
+                    {
+                        people = new[] { new { id = notionObject.AssigneeUserId } }
+                    }
+                },
+                icon = new
+                {
+                    type = "emoji",
+                    emoji = notionObject.Emoji
+                }
+            };
+
+            if (notionObject.Components is not null)
+            {
+                result.properties.Add("Компоненты разработки", new
+                {
+                    multi_select = notionObject.Components.Select(c => new { name = c }).ToList()
+                });
+            }
+
+            if (notionObject.Project is not null)
+            {
+                result.properties.Add("Проект", new
+                {
+                    multi_select = notionObject.Project.Select(p => new { name = p }).ToList()
+                });
+            }
+
+            return JsonConvert.SerializeObject(result);
+        }
+
+        public string SerializeNotionSearchObject(NotionObject notionObject)
+            => JsonConvert.SerializeObject(new
+            {
+                filter = new
+                {
+                    property = "YTID",
+                    rich_text = new
+                    {
+                        equals = notionObject.YTID
+                    }
+                }
+            });
+
+        public string SerializeNotionComment(NotionComment notionComment)
+            => JsonConvert.SerializeObject(new
+            {
+                parent = new { page_id = notionComment.PageId },
+                rich_text = new[]
+                {
+                    ConvertNotionUser(notionComment.Author),
+                    new
+                    {
+                        type = "text",
+                        text = new
+                        {
+                            content = $" комментирует:\r\n{notionComment.Text}"
+                        }
+                    }
+                }
+            });
+
+
+        dynamic ConvertNotionUser(NotionUser notionUser)
+            => new
+            {
+                type = "text",
+                text = new
+                {
+                    content = notionUser.Name
+                },
+                annotations = new
+                {
+                    bold = true, // Жирный текст
+                    color = "yellow_background" // Желтый фон
+                }
+            };
     }
 }

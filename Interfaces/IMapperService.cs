@@ -8,5 +8,8 @@ namespace YandexTrackerToNotion.Interfaces
         NotionObject GetNotionObject(string json);
         NotionObject GetNotionObject(YandexTrackerIssue issue);
         NotionComment GetNotionComment(NotionObject notionObject);
+        string SerializeNotionObject(NotionObject notionObject);
+        string SerializeNotionSearchObject(NotionObject notionObject);
+        string SerializeNotionComment(NotionComment notionComment);
     }
 }
