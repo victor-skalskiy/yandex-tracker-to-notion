@@ -29,11 +29,14 @@ public class WebhookController : ControllerBase
     {
         try
         {
-            YandexTrackerIssue ytpackage = _mapper.GetYandexTrackerObject($"{data}");
+            YandexTrackerIssue issue = _mapper.GetYandexTrackerObject($"{data}");
             if (_options.IsDevMode)
-                await _telegramService.SendMessageAsync($"{ytpackage.Key} started, packet type: {ytpackage?.PacketType}\r\npacket data: {data}");
+                await _telegramService.SendMessageAsync($"{issue.Key} started, packet type: {issue?.PacketType}\r\npacket data: {data}");
 
-            var notionObject = _mapper.GetNotionObject(ytpackage);
+            var notionObject = _mapper.GetNotionObject(issue);
+
+            await _notionService.CheckLinkedItemsAsync(issue, notionObject);
+
             await _notionService.CreateOrUpdatePageAsync(notionObject);
         }
         catch (Exception ex)

@@ -10,6 +10,6 @@ namespace YandexTrackerToNotion.Interfaces
         NotionComment GetNotionComment(NotionObject notionObject);
         string SerializeNotionObject(NotionObject notionObject);
         string SerializeNotionSearchObject(NotionObject notionObject);
-        string SerializeNotionComment(NotionComment notionComment);
+        string SerializeNotionComment(NotionComment NotionComment);
     }
 }

@@ -6,5 +6,6 @@ namespace YandexTrackerToNotion.Interfaces
     {
         Task<string> GetPageStructAsync();
         Task CreateOrUpdatePageAsync(NotionObject notionObject);
+        Task CheckLinkedItemsAsync(YandexTrackerIssue ytpackage, NotionObject notionObject);
     }
 }

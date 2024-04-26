@@ -58,6 +58,15 @@ namespace YandexTrackerToNotion.Services
             response.EnsureSuccessStatusCode();
         }
 
+        async Task<string> FindNotionItemIdByIssueId(string yTID)
+        {
+            var notionObject = new NotionObject { YTID = yTID };
+            var findedItems = JsonConvert.DeserializeObject<NotionSearchResponse>(
+                                    await FindPageByIDAsync(notionObject))?.Results ?? new List<NotionObject>();
+
+            return findedItems?.First().Id ?? string.Empty;
+        }
+
         async Task<string> FindPageByIDAsync(NotionObject notionObject)
         {
             var content = GetRequestContent(_mapper.SerializeNotionSearchObject(notionObject));
@@ -95,7 +104,6 @@ namespace YandexTrackerToNotion.Services
             }
             catch (Exception)
             {                
-                _semaphore.Release();
                 throw;
             }
             finally
@@ -130,6 +138,18 @@ namespace YandexTrackerToNotion.Services
             }            
 
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task CheckLinkedItemsAsync(YandexTrackerIssue issue, NotionObject notionObject)
+        {
+            if (!string.IsNullOrWhiteSpace(issue.ParentId))
+            {
+                var findedId = await FindNotionItemIdByIssueId(issue.ParentId);
+                if (!string.IsNullOrWhiteSpace(findedId))
+                {
+                    notionObject.ParentRelated = findedId;
+                }
+            }
         }
     }
 }

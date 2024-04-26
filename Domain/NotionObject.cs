@@ -24,6 +24,12 @@ namespace YandexTrackerToNotion.Domain
         public List<string>? Components { get; set; }
         public string Comment { get; set; }
         public YandexTrackerIssue Issue { get; set; }
+
+        /// <summary>
+        /// Deadline
+        /// </summary>
+        public DateTime DueDate { get; set; }
+        public string ParentRelated { get; set; }
     }
 
     /// <summary>

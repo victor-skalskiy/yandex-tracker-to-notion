@@ -111,6 +111,9 @@ namespace YandexTrackerToNotion.Domain
         [JsonProperty("issue.parent")]
         public string Parent { get; set; }
 
+        [JsonProperty("issue.parent.id")]
+        public string ParentId { get; set; }
+
         [JsonProperty("issue.previousQueue")]
         public string PreviousQueue { get; set; }
 

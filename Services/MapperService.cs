@@ -103,7 +103,8 @@ namespace YandexTrackerToNotion.Services
                 Emoji = status.Emoji,
                 AssigneeUserId = GetNotionUser(searchAssigneeUser)?.Id ?? string.Empty,
                 Project = string.IsNullOrWhiteSpace(issue.Project) ? null : new List<string> { issue.Project },
-                Components = components.Any() ? components : null
+                Components = components.Any() ? components : null,
+                DueDate = DateTime.Parse(issue.DueDate)
             };
         }
 
@@ -126,6 +127,8 @@ namespace YandexTrackerToNotion.Services
 
         public string SerializeNotionObject(NotionObject notionObject)
         {
+            var dateFormat = "yyyy-MM-dd";
+
             var result = new
             {
                 parent = new { database_id = notionObject.DatabaseId },
@@ -142,18 +145,6 @@ namespace YandexTrackerToNotion.Services
                     ["YTID"] = new
                     {
                         rich_text = new[] { new { text = new { content = notionObject.YTID } } }
-                    },
-                    ["Отработано минут"] = new
-                    {
-                        number = notionObject.Spent.TotalMinutes
-                    },
-                    ["Оценка (час)"] = new
-                    {
-                        number = notionObject.Estimation.TotalMinutes
-                    },
-                    ["Оценка исходная (час)"] = new
-                    {
-                        number = notionObject.OriginalEstimation.TotalMinutes
                     },
                     ["Статус"] = new
                     {
@@ -184,6 +175,52 @@ namespace YandexTrackerToNotion.Services
                 result.properties.Add("Проект", new
                 {
                     multi_select = notionObject.Project.Select(p => new { name = p }).ToList()
+                });
+            }
+
+            if (notionObject.Spent.TotalMinutes > 0)
+            {
+                result.properties.Add("Отработано минут", new
+                {
+                    number = notionObject.Spent.TotalMinutes
+                });
+            }
+
+            if (notionObject.Estimation.TotalMinutes > 0)
+            {
+                result.properties.Add("Оценка (час)", new
+                {
+                    number = notionObject.Estimation.TotalMinutes
+                });
+            }
+
+            if (notionObject.OriginalEstimation.TotalMinutes > 0)
+            {
+                result.properties.Add("Оценка исходная (час)", new
+                {
+                    number = notionObject.OriginalEstimation.TotalMinutes
+                });
+            }
+
+            if (!string.IsNullOrWhiteSpace(notionObject.ParentRelated))
+            {
+                result.properties.Add("YT: Родительский тикет", new
+                {
+                    relation = new[]
+                    {
+                        new { id = notionObject.ParentRelated }
+                    }
+                });
+            }
+
+            if (notionObject.DueDate != DateTime.MinValue)
+            {
+                result.properties.Add("Крайний срок", new
+                {
+                    date = new
+                    {
+                        start = notionObject.DueDate.ToString(dateFormat)
+                    }
                 });
             }
 
